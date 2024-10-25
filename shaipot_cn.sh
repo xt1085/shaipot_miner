@@ -114,16 +114,24 @@ EOF'
 
         3)
             # 重启服务
-            echo "正在重启 Shaicoin 挖矿服务..."
-            systemctl restart shai
-            echo "Shaicoin 挖矿服务已成功重启。"
+            if systemctl list-units --type=service | grep -q "shai.service"; then
+                echo "正在重启 Shaicoin 挖矿服务..."
+                systemctl restart shai
+                echo "Shaicoin 挖矿服务已成功重启。"
+            else
+                echo "错误：Shaicoin 挖矿服务尚未安装，请先执行安装操作。"
+            fi
             ;;
 
         4)
             # 停止服务
-            echo "正在停止 Shaicoin 挖矿服务..."
-            systemctl stop shai
-            echo "Shaicoin 挖矿服务已成功停止。"
+            if systemctl list-units --type=service | grep -q "shai.service"; then
+                echo "正在停止 Shaicoin 挖矿服务..."
+                systemctl stop shai
+                echo "Shaicoin 挖矿服务已成功停止。"
+            else
+                echo "错误：Shaicoin 挖矿服务尚未安装，请先执行安装操作。"
+            fi
             ;;
 
         5)
