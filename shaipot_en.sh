@@ -1,18 +1,18 @@
 #!/bin/bash
 
 while true; do
-    # Display options menu
-    echo "Please select an operation:"
+    # Display menu options
+    echo "Please select an option:"
     echo "1) Install mining software"
     echo "2) View logs"
     echo "3) Restart service"
     echo "4) Stop service"
-    echo "5) Enable service at startup"
-    echo "6) Disable service at startup"
+    echo "5) Enable service on startup"
+    echo "6) Disable service on startup"
     echo "7) Exit script"
     read -rp "Enter option number (1-7): " option
 
-    # Check if the user wants to exit the script
+    # Check if the script should exit
     if [[ "$option" == "7" ]]; then
         echo "Exiting script..."
         break
@@ -28,7 +28,7 @@ while true; do
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
             if [ $? -ne 0 ]; then
-                echo "Rust installation failed. Please check the network connection or installation script output."
+                echo "Rust installation failed. Please check the network connection or the output of the installation script."
                 continue
             fi
 
@@ -37,7 +37,7 @@ while true; do
 
             if ! command -v cargo &> /dev/null; then
                 echo "Cargo not found. Please manually add the Rust installation path to PATH."
-                echo 'You can fix this by adding the following line to ~/.bashrc or ~/.zshrc:'
+                echo 'To do so, add the following line to ~/.bashrc or ~/.zshrc:'
                 echo 'export PATH="$HOME/.cargo/bin:$PATH"'
                 continue
             fi
@@ -45,38 +45,38 @@ while true; do
             echo "Verifying Rust and Cargo installation..."
             rustc --version
             cargo --version
-            echo "Rust and Cargo have been successfully installed!"
+            echo "Rust and Cargo installed successfully!"
 
-            # Input wallet address and validate it
+            # Enter wallet address and validate it
             while true; do
                 read -rp "Please enter your Shaicoin wallet address: " wallet_address
                 if [[ ${#wallet_address} -eq 42 ]]; then
-                    echo "Entered wallet address: $wallet_address"
+                    echo "Wallet address entered: $wallet_address"
                     break
                 else
-                    echo "Error: Invalid wallet address. Ensure the address is 42 characters long."
+                    echo "Error: Wallet address is incorrect. Please ensure the address is 42 characters long."
                 fi
             done
 
-            # If /root/shaipot directory exists, delete it
+            # Remove /root/shaipot directory if it exists
             if [ -d "/root/shaipot" ]; then
                 echo "/root/shaipot directory exists, deleting..."
                 rm -rf /root/shaipot
             fi
 
             # Clone the latest shaipot repository
-            echo "Cloning the shaipot repository..."
+            echo "Cloning shaipot repository..."
             git clone https://github.com/shaicoin/shaipot.git /root/shaipot
 
-            # Navigate to the project directory
+            # Enter project directory
             cd /root/shaipot || { echo "Unable to enter /root/shaipot directory"; continue; }
             echo "Current directory: $(pwd)"
 
-            echo "Compiling the shaipot mining program..."
+            echo "Compiling shaipot mining program..."
             cargo rustc --release -- -C opt-level=3 -C target-cpu=native -C codegen-units=1 -C debuginfo=0
 
             if [ $? -ne 0 ]; then
-                echo "Compilation failed. Please check for errors."
+                echo "Compilation failed. Please check the error messages."
                 continue
             fi
 
@@ -103,7 +103,7 @@ EOF'
             systemctl daemon-reload
             systemctl start shai
             systemctl enable shai
-            echo "Shaipot mining program has been started and enabled as a service."
+            echo "Shaipot mining program started and enabled as a service."
             ;;
 
         2)
@@ -113,42 +113,35 @@ EOF'
             ;;
 
         3)
-            # Restart the service and check status
+            # Restart service
             echo "Restarting Shaicoin mining service..."
             systemctl restart shai
-
-            # Check service status
-            if systemctl is-active --quiet shai; then
-                echo "Shaicoin mining service has been successfully restarted."
-            else
-                echo "Shaicoin mining service restart failed. Please check logs for more information."
-            fi
+            echo "Shaicoin mining service restarted successfully."
             ;;
 
         4)
-            # Stop the service
+            # Stop service
             echo "Stopping Shaicoin mining service..."
             systemctl stop shai
-            sleep 1  # Ensure return to menu after stopping
-            echo "Shaicoin mining service has been successfully stopped."
+            echo "Shaicoin mining service stopped successfully."
             ;;
 
         5)
-            # Enable service at startup
-            echo "Enabling Shaicoin mining service at startup..."
+            # Enable service on startup
+            echo "Enabling Shaicoin mining service on startup..."
             systemctl enable shai
-            echo "Shaicoin mining service has been set to start at boot."
+            echo "Shaicoin mining service enabled on startup."
             ;;
 
         6)
-            # Disable service at startup
-            echo "Disabling Shaicoin mining service at startup..."
+            # Disable service on startup
+            echo "Disabling Shaicoin mining service on startup..."
             systemctl disable shai
-            echo "Shaicoin mining service startup has been disabled."
+            echo "Shaicoin mining service disabled on startup."
             ;;
 
         *)
-            echo "Invalid option, please enter a number from 1 to 7."
+            echo "Invalid option, please enter a number between 1 and 7."
             ;;
     esac
 
