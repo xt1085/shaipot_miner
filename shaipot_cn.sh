@@ -51,8 +51,16 @@ while true; do
 
         2)
             # 安装并配置挖矿软件
-            read -rp "请输入您的 Shaicoin 钱包地址: " wallet_address
-            echo "输入的钱包地址: $wallet_address"
+            while true; do
+                read -rp "请输入您的 Shaicoin 钱包地址: " wallet_address
+                # 检查钱包地址长度
+                if [[ ${#wallet_address} -eq 42 ]]; then
+                    echo "输入的钱包地址: $wallet_address"
+                    break
+                else
+                    echo "错误：钱包地址不正确。请确保地址为42位。"
+                fi
+            done
 
             # 如果 /root/shaipot 目录存在，则删除
             if [ -d "/root/shaipot" ]; then
