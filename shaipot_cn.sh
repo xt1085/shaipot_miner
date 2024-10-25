@@ -145,5 +145,5 @@ EOF'
             ;;
     esac
 
-    echo "操作完成，返回菜单..."
+    echo -e "\n"
 done
