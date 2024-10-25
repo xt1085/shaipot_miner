@@ -115,15 +115,14 @@ EOF'
         3)
             # 重启服务
             echo "正在重启 Shaicoin 挖矿服务..."
-            systemctl daemon-reload
-            systemctl restart shai
+            systemctl stop shai
+            systemctl start shai
             echo "Shaicoin 挖矿服务已成功重启。"
             ;;
 
         4)
             # 停止服务
             echo "正在停止 Shaicoin 挖矿服务..."
-            systemctl daemon-reload
             systemctl stop shai
             echo "Shaicoin 挖矿服务已成功停止。"
             ;;
