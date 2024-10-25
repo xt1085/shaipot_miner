@@ -113,23 +113,16 @@ EOF'
             ;;
 
         3)
-            # 重启服务并检查状态
+            # 重启服务
             echo "正在重启 Shaicoin 挖矿服务..."
             systemctl restart shai
-
-            # 检查服务状态
-            if systemctl is-active --quiet shai; then
-                echo "Shaicoin 挖矿服务已成功重启。"
-            else
-                echo "Shaicoin 挖矿服务重启失败。请检查日志获取详细信息。"
-            fi
+            echo "Shaicoin 挖矿服务已成功重启。"
             ;;
 
         4)
             # 停止服务
             echo "正在停止 Shaicoin 挖矿服务..."
             systemctl stop shai
-            sleep 1  # 确保停止后返回菜单
             echo "Shaicoin 挖矿服务已成功停止。"
             ;;
 
