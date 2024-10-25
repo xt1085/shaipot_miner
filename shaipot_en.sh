@@ -1,18 +1,18 @@
 #!/bin/bash
 
 while true; do
-    # Display menu options
-    echo "Please select an option:"
+    # Display the options menu
+    echo "Please select an operation:"
     echo "1) Install mining software"
     echo "2) View logs"
     echo "3) Restart service"
     echo "4) Stop service"
-    echo "5) Enable service on startup"
-    echo "6) Disable service on startup"
+    echo "5) Set service to start on boot"
+    echo "6) Remove service from startup"
     echo "7) Exit script"
     read -rp "Enter option number (1-7): " option
 
-    # Check if the script should exit
+    # Check if we need to exit the script
     if [[ "$option" == "7" ]]; then
         echo "Exiting script..."
         break
@@ -21,14 +21,14 @@ while true; do
     case $option in
         1)
             # Install environment and configure mining software
-            echo "Updating and installing necessary packages..."
+            echo "Updating and installing required packages..."
             apt update -y && apt upgrade -y && apt install -y pkg-config libssl-dev curl wget htop sudo git net-tools build-essential cmake automake libtool autoconf libuv1-dev libhwloc-dev
 
             echo "Installing Rust and Cargo..."
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
             if [ $? -ne 0 ]; then
-                echo "Rust installation failed. Please check the network connection or the output of the installation script."
+                echo "Rust installation failed. Please check network connection or installation script output."
                 continue
             fi
 
@@ -36,8 +36,8 @@ while true; do
             source "$HOME/.cargo/env"
 
             if ! command -v cargo &> /dev/null; then
-                echo "Cargo not found. Please manually add the Rust installation path to PATH."
-                echo 'To do so, add the following line to ~/.bashrc or ~/.zshrc:'
+                echo "Cargo not found, please manually add Rust installation path to PATH."
+                echo 'You can resolve this by adding the following line to ~/.bashrc or ~/.zshrc:'
                 echo 'export PATH="$HOME/.cargo/bin:$PATH"'
                 continue
             fi
@@ -45,20 +45,20 @@ while true; do
             echo "Verifying Rust and Cargo installation..."
             rustc --version
             cargo --version
-            echo "Rust and Cargo installed successfully!"
+            echo "Rust and Cargo successfully installed!"
 
-            # Enter wallet address and validate it
+            # Enter wallet address and validate
             while true; do
-                read -rp "Please enter your Shaicoin wallet address: " wallet_address
+                read -rp "Enter your Shaicoin wallet address: " wallet_address
                 if [[ ${#wallet_address} -eq 42 ]]; then
-                    echo "Wallet address entered: $wallet_address"
+                    echo "Entered wallet address: $wallet_address"
                     break
                 else
-                    echo "Error: Wallet address is incorrect. Please ensure the address is 42 characters long."
+                    echo "Error: Incorrect wallet address. Please ensure it is 42 characters."
                 fi
             done
 
-            # Remove /root/shaipot directory if it exists
+            # If /root/shaipot directory exists, delete it
             if [ -d "/root/shaipot" ]; then
                 echo "/root/shaipot directory exists, deleting..."
                 rm -rf /root/shaipot
@@ -76,7 +76,7 @@ while true; do
             cargo rustc --release -- -C opt-level=3 -C target-cpu=native -C codegen-units=1 -C debuginfo=0
 
             if [ $? -ne 0 ]; then
-                echo "Compilation failed. Please check the error messages."
+                echo "Compilation failed. Please check the error message."
                 continue
             fi
 
@@ -103,7 +103,7 @@ EOF'
             systemctl daemon-reload
             systemctl start shai
             systemctl enable shai
-            echo "Shaipot mining program started and enabled as a service."
+            echo "Shaipot mining program has started as a service and enabled."
             ;;
 
         2)
@@ -116,28 +116,28 @@ EOF'
             # Restart service
             echo "Restarting Shaicoin mining service..."
             systemctl restart shai
-            echo "Shaicoin mining service restarted successfully."
+            echo "Shaicoin mining service successfully restarted."
             ;;
 
         4)
             # Stop service
             echo "Stopping Shaicoin mining service..."
             systemctl stop shai
-            echo "Shaicoin mining service stopped successfully."
+            echo "Shaicoin mining service successfully stopped."
             ;;
 
         5)
-            # Enable service on startup
-            echo "Enabling Shaicoin mining service on startup..."
+            # Set service to start on boot
+            echo "Setting Shaicoin mining service to start on boot..."
             systemctl enable shai
-            echo "Shaicoin mining service enabled on startup."
+            echo "Shaicoin mining service set to start on boot."
             ;;
 
         6)
-            # Disable service on startup
-            echo "Disabling Shaicoin mining service on startup..."
+            # Remove service from startup
+            echo "Removing Shaicoin mining service from startup..."
             systemctl disable shai
-            echo "Shaicoin mining service disabled on startup."
+            echo "Shaicoin mining service removed from startup."
             ;;
 
         *)
