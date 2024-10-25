@@ -3,25 +3,24 @@
 while true; do
     # 显示选项菜单
     echo "请选择一个操作："
-    echo "1) 配置安装环境"
-    echo "2) 安装挖矿软件"
-    echo "3) 查看日志"
-    echo "4) 重启服务"
-    echo "5) 停止服务"
-    echo "6) 设置开机自启动"
-    echo "7) 移除开机自启动"
-    echo "8) 退出脚本"
-    read -rp "请输入选项编号 (1-8): " option
+    echo "1) 安装挖矿软件"
+    echo "2) 查看日志"
+    echo "3) 重启服务"
+    echo "4) 停止服务"
+    echo "5) 设置开机自启动"
+    echo "6) 移除开机自启动"
+    echo "7) 退出脚本"
+    read -rp "请输入选项编号 (1-7): " option
 
     # 检查是否要退出脚本
-    if [[ "$option" == "8" ]]; then
+    if [[ "$option" == "7" ]]; then
         echo "退出脚本..."
         break
     fi
 
     case $option in
         1)
-            # 配置安装环境
+            # 安装环境并配置挖矿软件
             echo "更新并安装必要的包..."
             apt update -y && apt upgrade -y && apt install -y pkg-config libssl-dev curl wget htop sudo git net-tools build-essential cmake automake libtool autoconf libuv1-dev libhwloc-dev
 
@@ -47,13 +46,10 @@ while true; do
             rustc --version
             cargo --version
             echo "Rust 和 Cargo 已成功安装！"
-            ;;
 
-        2)
-            # 安装并配置挖矿软件
+            # 输入钱包地址并进行验证
             while true; do
                 read -rp "请输入您的 Shaicoin 钱包地址: " wallet_address
-                # 检查钱包地址长度
                 if [[ ${#wallet_address} -eq 42 ]]; then
                     echo "输入的钱包地址: $wallet_address"
                     break
@@ -110,13 +106,13 @@ EOF'
             echo "Shaipot 挖矿程序已作为服务启动并启用。"
             ;;
 
-        3)
+        2)
             # 查看挖矿程序日志
             echo "显示 Shaicoin 挖矿服务日志..."
             journalctl -u shai -f
             ;;
 
-        4)
+        3)
             # 重启服务并检查状态
             echo "正在重启 Shaicoin 挖矿服务..."
             systemctl restart shai
@@ -129,7 +125,7 @@ EOF'
             fi
             ;;
 
-        5)
+        4)
             # 停止服务
             echo "正在停止 Shaicoin 挖矿服务..."
             systemctl stop shai
@@ -137,14 +133,14 @@ EOF'
             echo "Shaicoin 挖矿服务已成功停止。"
             ;;
 
-        6)
+        5)
             # 设置服务为开机自启动
             echo "设置 Shaicoin 挖矿服务为开机自启动..."
             systemctl enable shai
             echo "Shaicoin 挖矿服务已设置为开机自启动。"
             ;;
 
-        7)
+        6)
             # 移除服务的开机自启动
             echo "移除 Shaicoin 挖矿服务的开机自启动..."
             systemctl disable shai
@@ -152,7 +148,7 @@ EOF'
             ;;
 
         *)
-            echo "无效选项，请输入 1 到 8 之间的数字。"
+            echo "无效选项，请输入 1 到 7 之间的数字。"
             ;;
     esac
 
