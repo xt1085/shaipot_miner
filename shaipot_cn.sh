@@ -69,7 +69,7 @@ while true; do
             git clone https://github.com/shaicoin/shaipot.git /root/shaipot
 
             # 进入项目目录
-            cd /root/shaipot || { echo "无法进入 /root/shaipot 目录"; continue; }
+            cd /root/shaipot
             echo "当前目录: $(pwd)"
 
             echo "正在编译 shaipot 挖矿程序..."
@@ -79,6 +79,9 @@ while true; do
                 echo "编译失败。请检查错误信息。"
                 continue
             fi
+
+            # 返回到 /root 目录
+            cd /root
 
             echo "正在创建 systemd 服务文件..."
             bash -c 'cat > /etc/systemd/system/shai.service <<EOF
