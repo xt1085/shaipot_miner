@@ -1,4 +1,4 @@
-# shaipot_miner
+# Shaipot Miner for Linux
 
 https://pool.shaicoin.org
 
