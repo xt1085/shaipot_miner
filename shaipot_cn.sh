@@ -9,11 +9,12 @@ while true; do
     echo "4) 停止服务"
     echo "5) 设置开机自启动"
     echo "6) 移除开机自启动"
-    echo "7) 退出脚本"
-    read -rp "请输入选项编号 (1-7): " option
+    echo "7) 修改钱包地址"
+    echo "8) 退出脚本"
+    read -rp "请输入选项编号 (1-8): " option
 
     # 检查是否要退出脚本
-    if [[ "$option" == "7" ]]; then
+    if [[ "$option" == "8" ]]; then
         echo "退出脚本..."
         break
     fi
@@ -143,8 +144,44 @@ EOF'
             echo "Shaicoin 挖矿服务的开机自启动已移除。"
             ;;
 
+        7)
+            # 修改钱包地址，生成新的服务文件
+            while true; do
+                read -rp "请输入新的 Shaicoin 钱包地址: " wallet_address
+                if [[ ${#wallet_address} -eq 42 ]]; then
+                    echo "新的钱包地址: $wallet_address"
+                    echo "正在创建新的 systemd 服务文件..."
+                    bash -c 'cat > /etc/systemd/system/shai.service <<EOF
+[Unit]
+Description=Shaicoin Mining Service
+After=network.target
+
+[Service]
+ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool wss://pool.shaicoin.org --threads $(nproc) --vdftime 1.5
+WorkingDirectory=/root/shaipot
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=10
+Environment=RUST_BACKTRACE=1
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+                    echo "刷新 systemd 配置并重启服务..."
+                    systemctl daemon-reload
+                    systemctl restart shai
+                    echo "钱包地址已更新，服务已重新启动。"
+                    break
+                else
+                    echo "错误：钱包地址不正确。请确保地址为42位。"
+                fi
+            done
+            ;;
+
         *)
-            echo "无效选项，请输入 1 到 7 之间的数字。"
+            echo "无效选项，请输入 1 到 8 之间的数字。"
             ;;
     esac
 
