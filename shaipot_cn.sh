@@ -7,14 +7,16 @@ while true; do
     echo "2) 查看日志"
     echo "3) 重启服务"
     echo "4) 停止服务"
-    echo "5) 设置开机自启动"
-    echo "6) 移除开机自启动"
-    echo "7) 修改钱包地址"
-    echo "8) 退出脚本"
-    read -rp "请输入选项编号 (1-8): " option
+    echo "5) 查看钱包地址"
+    echo "6) 修改钱包地址"
+    echo "7) 修改CPU占用(核心数)"
+    echo "8) 设置开机自启动"
+    echo "9) 移除开机自启动"
+    echo "10) 退出脚本"
+    read -rp "请输入选项编号 (1-10): " option
 
     # 检查是否要退出脚本
-    if [[ "$option" == "8" ]]; then
+    if [[ "$option" == "10" ]]; then
         echo "退出脚本..."
         break
     fi
@@ -23,7 +25,11 @@ while true; do
         1)
             # 安装环境并配置挖矿软件
             echo "更新并安装必要的包..."
-            apt update -y && apt upgrade -y && apt install -y pkg-config libssl-dev curl wget htop sudo git net-tools build-essential cmake automake libtool autoconf libuv1-dev libhwloc-dev
+            apt update -y && apt upgrade -y && apt install -y \
+            build-essential libtool autotools-dev automake pkg-config \
+            bsdmainutils python3 libevent-dev libboost-dev libsqlite3-dev \
+            libssl-dev curl wget htop git net-tools cmake autoconf \
+            libuv1-dev libhwloc-dev
 
             echo "正在安装 Rust 和 Cargo..."
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -131,21 +137,30 @@ EOF'
             ;;
 
         5)
-            # 设置服务为开机自启动
-            echo "设置 Shaicoin 挖矿服务为开机自启动..."
-            systemctl enable shai
-            echo "Shaicoin 挖矿服务已设置为开机自启动。"
+            # 查看当前钱包地址
+            wallet_address=$(grep -oP '(?<=--address )\S+' /etc/systemd/system/shai.service)
+            if [[ -n "$wallet_address" ]]; then
+                echo "当前钱包地址为: $wallet_address"
+            else
+                echo "无法从服务文件中提取钱包地址。"
+            fi
             ;;
 
         6)
-            # 移除服务的开机自启动
-            echo "移除 Shaicoin 挖矿服务的开机自启动..."
-            systemctl disable shai
-            echo "Shaicoin 挖矿服务的开机自启动已移除。"
-            ;;
+            # 修改钱包地址，先提取矿池地址和线程数
+            pool_address=$(grep -oP '(?<=--pool )\S+' /etc/systemd/system/shai.service)
+            thread_count=$(grep -oP '(?<=--threads )\S+' /etc/systemd/system/shai.service)
+            
+            if [[ -z "$pool_address" ]]; then
+                echo "无法从服务文件中提取矿池地址。"
+                continue
+            fi
+            
+            if [[ -z "$thread_count" ]]; then
+                echo "无法从服务文件中提取线程数，默认为$(nproc)核。"
+                thread_count=$(nproc)
+            fi
 
-        7)
-            # 修改钱包地址，生成新的服务文件
             while true; do
                 read -rp "请输入新的 Shaicoin 钱包地址: " wallet_address
                 if [[ ${#wallet_address} -eq 42 ]]; then
@@ -157,7 +172,7 @@ Description=Shaicoin Mining Service
 After=network.target
 
 [Service]
-ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool wss://pool.shaicoin.org --threads $(nproc) --vdftime 1.5
+ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool '"$pool_address"' --threads '"$thread_count"' --vdftime 1.5
 WorkingDirectory=/root/shaipot
 StandardOutput=journal
 StandardError=journal
@@ -180,8 +195,70 @@ EOF'
             done
             ;;
 
+        7)
+            # 修改CPU占用(核心数)，先提取矿池和钱包地址
+            wallet_address=$(grep -oP '(?<=--address )\S+' /etc/systemd/system/shai.service)
+            pool_address=$(grep -oP '(?<=--pool )\S+' /etc/systemd/system/shai.service)
+            
+            if [[ -z "$wallet_address" ]]; then
+                echo "无法从服务文件中提取钱包地址。"
+                continue
+            fi
+            
+            if [[ -z "$pool_address" ]]; then
+                echo "无法从服务文件中提取矿池地址。"
+                continue
+            fi
+
+            while true; do
+                read -rp "请输入要使用的核心数: " thread_count
+                if [[ "$thread_count" =~ ^[0-9]+$ ]] && [[ "$thread_count" -gt 0 ]]; then
+                    echo "设置核心数为: $thread_count"
+                    bash -c 'cat > /etc/systemd/system/shai.service <<EOF
+[Unit]
+Description=Shaicoin Mining Service
+After=network.target
+
+[Service]
+ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool '"$pool_address"' --threads '"$thread_count"' --vdftime 1.5
+WorkingDirectory=/root/shaipot
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=10
+Environment=RUST_BACKTRACE=1
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+                    echo "刷新 systemd 配置并重启服务..."
+                    systemctl daemon-reload
+                    systemctl restart shai
+                    echo "核心数已更新，服务已重新启动。"
+                    break
+                else
+                    echo "错误：请输入一个大于0的数字。"
+                fi
+            done
+            ;;
+
+        8)
+            # 设置服务为开机自启动
+            echo "设置 Shaicoin 挖矿服务为开机自启动..."
+            systemctl enable shai
+            echo "Shaicoin 挖矿服务已设置为开机自启动。"
+            ;;
+
+        9)
+            # 移除服务的开机自启动
+            echo "移除 Shaicoin 挖矿服务的开机自启动..."
+            systemctl disable shai
+            echo "Shaicoin 挖矿服务的开机自启动已移除。"
+            ;;
+
         *)
-            echo "无效选项，请输入 1 到 8 之间的数字。"
+            echo "无效选项，请输入 1 到 10 之间的数字。"
             ;;
     esac
 
