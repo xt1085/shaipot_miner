@@ -15,8 +15,8 @@ while true; do
     echo "8) 修改矿池地址"
     echo "9) 可用矿池列表"
     echo "10) 修改CPU占用"
-    echo "11) 设置开机自启动"
-    echo "12) 移除开机自启动"
+    echo "11) 设置开机自启"
+    echo "12) 移除开机自启"
     
     echo -e "\n13) 退出脚本"
 
@@ -31,35 +31,63 @@ while true; do
     case $option in
         1)
             # 安装环境并配置挖矿软件
-            echo "更新并安装必要的包..."
-            apt update -y && apt upgrade -y && apt install -y \
-            build-essential libtool autotools-dev automake pkg-config \
-            bsdmainutils python3 libevent-dev libboost-dev libsqlite3-dev \
-            libssl-dev curl wget htop git net-tools cmake autoconf \
-            libuv1-dev libhwloc-dev
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                if ! command -v brew &> /dev/null; then
+                    echo "Homebrew 未安装，您想安装哪个版本？"
+                    echo "1) 原版 Homebrew"
+                    echo "2) 国内加速版 Homebrew"
+                    read -rp "请输入选项编号 (1-2): " brew_option
 
-            echo "正在安装 Rust 和 Cargo..."
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+                    case $brew_option in
+                        1)
+                            echo "正在安装原版 Homebrew..."
+                            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                            ;;
+                        2)
+                            echo "正在安装国内加速版 Homebrew..."
+                            /bin/bash -c "$(curl -fsSL https://gitee.com/ineo6/homebrew-install/raw/master/install.sh)"
+                            ;;
+                        *)
+                            echo "无效选项，取消 Homebrew 安装。"
+                            continue
+                            ;;
+                    esac
+                fi
 
-            if [ $? -ne 0 ]; then
-                echo "Rust 安装失败。请检查网络连接或安装脚本的输出。"
-                continue
+                echo "更新并安装必要的包..."
+                brew update && brew install \
+                automake libtool pkg-config cmake git rust
+            else
+                echo "更新并安装必要的包..."
+                apt update -y && apt upgrade -y && apt install -y \
+                build-essential libtool autotools-dev automake pkg-config \
+                bsdmainutils python3 libevent-dev libboost-dev libsqlite3-dev \
+                libssl-dev curl wget htop git net-tools cmake autoconf \
+                libuv1-dev libhwloc-dev
+
+                echo "正在安装 Rust 和 Cargo..."
+                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+                if [ $? -ne 0 ]; then
+                    echo "Rust 安装失败。请检查网络连接或安装脚本的输出。"
+                    continue
+                fi
+
+                echo "更新环境变量..."
+                source "$HOME/.cargo/env"
+
+                if ! command -v cargo &> /dev/null; then
+                    echo "Cargo 未找到，请手动将 Rust 安装路径添加到 PATH 中。"
+                    echo '可以通过在 ~/.bashrc 或 ~/.zshrc 中添加以下行来解决：'
+                    echo 'export PATH="$HOME/.cargo/bin:$PATH"'
+                    continue
+                fi
+
+                echo "验证 Rust 和 Cargo 安装..."
+                rustc --version
+                cargo --version
+                echo "Rust 和 Cargo 已成功安装！"
             fi
-
-            echo "更新环境变量..."
-            source "$HOME/.cargo/env"
-
-            if ! command -v cargo &> /dev/null; then
-                echo "Cargo 未找到，请手动将 Rust 安装路径添加到 PATH 中。"
-                echo '可以通过在 ~/.bashrc 或 ~/.zshrc 中添加以下行来解决：'
-                echo 'export PATH="$HOME/.cargo/bin:$PATH"'
-                continue
-            fi
-
-            echo "验证 Rust 和 Cargo 安装..."
-            rustc --version
-            cargo --version
-            echo "Rust 和 Cargo 已成功安装！"
 
             # 输入钱包地址并进行验证
             while true; do
@@ -72,18 +100,18 @@ while true; do
                 fi
             done
 
-            # 如果 /root/shaipot 目录存在，则删除
-            if [ -d "/root/shaipot" ]; then
-                echo "/root/shaipot 目录已存在，正在删除..."
-                rm -rf /root/shaipot
+            # 如果 shaipot 目录存在，则删除
+            if [ -d "$HOME/shaipot" ]; then
+                echo "$HOME/shaipot 目录已存在，正在删除..."
+                rm -rf "$HOME/shaipot"
             fi
 
             # 克隆最新的 shaipot 仓库
             echo "正在克隆 shaipot 仓库..."
-            git clone https://github.com/shaicoin/shaipot.git /root/shaipot
+            git clone https://github.com/shaicoin/shaipot.git "$HOME/shaipot"
 
             # 进入项目目录
-            cd /root/shaipot
+            cd "$HOME/shaipot"
             echo "当前目录: $(pwd)"
 
             echo "正在编译 shaipot 挖矿程序..."
@@ -94,18 +122,26 @@ while true; do
                 continue
             fi
 
-            # 返回到 /root 目录
-            cd /root
+            # 返回到 $HOME 目录
+            cd "$HOME"
 
-            echo "正在创建 systemd 服务文件..."
-            bash -c 'cat > /etc/systemd/system/shai.service <<EOF
+            echo "正在创建启动脚本..."
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                cat > "$HOME/start_shai_mining.sh" <<EOF
+#!/bin/bash
+$HOME/shaipot/target/release/shaipot --address "$wallet_address" --pool wss://pool.shaicoin.org --threads $(sysctl -n hw.ncpu) --vdftime 1.5
+EOF
+                chmod +x "$HOME/start_shai_mining.sh"
+                echo "可以通过运行 $HOME/start_shai_mining.sh 来启动 Shaicoin 挖矿程序。"
+            else
+                bash -c 'cat > /etc/systemd/system/shai.service <<EOF
 [Unit]
 Description=Shaicoin Mining Service
 After=network.target
 
 [Service]
-ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool wss://pool.shaicoin.org --threads $(nproc) --vdftime 1.5
-WorkingDirectory=/root/shaipot
+ExecStart=$HOME/shaipot/target/release/shaipot --address '"$wallet_address"' --pool wss://pool.shaicoin.org --threads $(nproc) --vdftime 1.5
+WorkingDirectory=$HOME/shaipot
 StandardOutput=journal
 StandardError=journal
 Restart=always
@@ -116,220 +152,58 @@ Environment=RUST_BACKTRACE=1
 WantedBy=multi-user.target
 EOF'
 
-            echo "刷新 systemd 配置并启动服务..."
-            systemctl daemon-reload
-            systemctl start shai
-            systemctl enable shai
-            echo "Shaipot 挖矿程序已作为服务启动并启用。"
+                echo "刷新 systemd 配置并启动服务..."
+                systemctl daemon-reload
+                systemctl start shai
+                systemctl enable shai
+                echo "Shaipot 挖矿程序已作为服务启动并启用。"
+            fi
             ;;
 
         2)
             # 查看挖矿程序日志
-            echo "显示 Shaicoin 挖矿服务日志..."
-            journalctl -u shai -f
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                echo "macOS 上暂不支持使用 systemd 查看日志，请手动检查日志文件。"
+            else
+                echo "显示 Shaicoin 挖矿服务日志..."
+                journalctl -u shai -f
+            fi
             ;;
 
         3)
             # 重启服务
-            echo "正在重启 Shaicoin 挖矿服务..."
-            systemctl restart shai
-            echo "Shaicoin 挖矿服务已成功重启。"
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                echo "macOS 上无法重启 systemd 服务，请手动重启程序。"
+            else
+                echo "正在重启 Shaicoin 挖矿服务..."
+                systemctl restart shai
+                echo "Shaicoin 挖矿服务已成功重启。"
+            fi
             ;;
 
         4)
             # 停止服务
-            echo "正在停止 Shaicoin 挖矿服务..."
-            systemctl stop shai
-            echo "Shaicoin 挖矿服务已成功停止。"
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                echo "macOS 上无法停止 systemd 服务，请手动停止程序。"
+            else
+                echo "正在停止 Shaicoin 挖矿服务..."
+                systemctl stop shai
+                echo "Shaicoin 挖矿服务已成功停止。"
+            fi
             ;;
 
         5)
             # 查看当前钱包地址
-            wallet_address=$(grep -oP '(?<=--address )\S+' /etc/systemd/system/shai.service)
-            if [[ -n "$wallet_address" ]]; then
-                echo "当前钱包地址为: $wallet_address"
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                echo "macOS 上请手动检查启动脚本中的钱包地址。"
             else
-                echo "无法从服务文件中提取钱包地址。"
-            fi
-            ;;
-
-        6)
-            # 修改钱包地址，先提取矿池地址和线程数
-            pool_address=$(grep -oP '(?<=--pool )\S+' /etc/systemd/system/shai.service)
-            thread_count=$(grep -oP '(?<=--threads )\S+' /etc/systemd/system/shai.service)
-            
-            if [[ -z "$pool_address" ]]; then
-                echo "无法从服务文件中提取矿池地址。"
-                continue
-            fi
-            
-            if [[ -z "$thread_count" ]]; then
-                echo "无法从服务文件中提取线程数，默认为$(nproc)核。"
-                thread_count=$(nproc)
-            fi
-
-            while true; do
-                read -rp "请输入新的 Shaicoin 钱包地址: " wallet_address
-                if [[ ${#wallet_address} -eq 42 ]]; then
-                    echo "新的钱包地址: $wallet_address"
-                    echo "正在创建新的 systemd 服务文件..."
-                    bash -c 'cat > /etc/systemd/system/shai.service <<EOF
-[Unit]
-Description=Shaicoin Mining Service
-After=network.target
-
-[Service]
-ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool '"$pool_address"' --threads '"$thread_count"' --vdftime 1.5
-WorkingDirectory=/root/shaipot
-StandardOutput=journal
-StandardError=journal
-Restart=always
-RestartSec=10
-Environment=RUST_BACKTRACE=1
-
-[Install]
-WantedBy=multi-user.target
-EOF'
-
-                    echo "刷新 systemd 配置并重启服务..."
-                    systemctl daemon-reload
-                    systemctl restart shai
-                    echo "钱包地址已更新，服务已重新启动。"
-                    break
+                wallet_address=$(grep -oP '(?<=--address )\S+' /etc/systemd/system/shai.service)
+                if [[ -n "$wallet_address" ]]; then
+                    echo "当前钱包地址为: $wallet_address"
                 else
-                    echo "错误：钱包地址不正确。请确保地址为42位。"
+                    echo "无法从服务文件中提取钱包地址。"
                 fi
-            done
-            ;;
-
-        7)
-            # 查看当前矿池地址
-            pool_address=$(grep -oP '(?<=--pool )\S+' /etc/systemd/system/shai.service)
-            if [[ -n "$pool_address" ]]; then
-                echo "当前矿池地址为: $pool_address"
-            else
-                echo "无法从服务文件中提取矿池地址。"
             fi
-            ;;
-
-        8)
-            # 修改矿池地址，先提取钱包地址和CPU占用
-            wallet_address=$(grep -oP '(?<=--address )\S+' /etc/systemd/system/shai.service)
-            thread_count=$(grep -oP '(?<=--threads )\S+' /etc/systemd/system/shai.service)
-            
-            if [[ -z "$wallet_address" ]]; then
-                echo "无法从服务文件中提取钱包地址。"
-                continue
-            fi
-            
-            if [[ -z "$thread_count" ]]; then
-                echo "无法从服务文件中提取线程数，默认为$(nproc)核。"
-                thread_count=$(nproc)
-            fi
-
-            while true; do
-                read -rp "请输入新的 Shaicoin 矿池地址: " pool_address
-                if [[ -n "$pool_address" ]]; then
-                    echo "新的矿池地址: $pool_address"
-                    echo "正在创建新的 systemd 服务文件..."
-                    bash -c 'cat > /etc/systemd/system/shai.service <<EOF
-[Unit]
-Description=Shaicoin Mining Service
-After=network.target
-
-[Service]
-ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool '"$pool_address"' --threads '"$thread_count"' --vdftime 1.5
-WorkingDirectory=/root/shaipot
-StandardOutput=journal
-StandardError=journal
-Restart=always
-RestartSec=10
-Environment=RUST_BACKTRACE=1
-
-[Install]
-WantedBy=multi-user.target
-EOF'
-
-                    echo "刷新 systemd 配置并重启服务..."
-                    systemctl daemon-reload
-                    systemctl restart shai
-                    echo "矿池地址已更新，服务已重新启动。"
-                    break
-                else
-                    echo "错误：矿池地址不能为空。"
-                fi
-            done
-            ;;
-
-        9)
-            # 可用矿池列表
-            echo "可用矿池列表："
-            echo -e "\n矿池地址：wss://pool.shaicoin.org\n网站地址：https://pool.shaicoin.org\n"
-            echo -e "矿池地址：wss://shaipool.moncici.xyz/ws/\n网站地址：https://shaipool.moncici.xyz\n"
-            echo -e "矿池地址：ws://162.220.160.74:3333\n网站地址：https://shaipool.z4ch.xyz\n"
-            echo -e "矿池地址：wss://pool.shaicoin.fun\n网站地址：https://www.shaicoin.fun\n"
-            ;;
-
-        10)
-            # 修改CPU占用，先提取矿池和钱包地址
-            wallet_address=$(grep -oP '(?<=--address )\S+' /etc/systemd/system/shai.service)
-            pool_address=$(grep -oP '(?<=--pool )\S+' /etc/systemd/system/shai.service)
-            
-            if [[ -z "$wallet_address" ]]; then
-                echo "无法从服务文件中提取钱包地址。"
-                continue
-            fi
-            
-            if [[ -z "$pool_address" ]]; then
-                echo "无法从服务文件中提取矿池地址。"
-                continue
-            fi
-
-            while true; do
-                read -rp "请输入要使用的核心数: " thread_count
-                if [[ "$thread_count" =~ ^[0-9]+$ ]] && [[ "$thread_count" -gt 0 ]]; then
-                    echo "设置核心数为: $thread_count"
-                    bash -c 'cat > /etc/systemd/system/shai.service <<EOF
-[Unit]
-Description=Shaicoin Mining Service
-After=network.target
-
-[Service]
-ExecStart=/root/shaipot/target/release/shaipot --address '"$wallet_address"' --pool '"$pool_address"' --threads '"$thread_count"' --vdftime 1.5
-WorkingDirectory=/root/shaipot
-StandardOutput=journal
-StandardError=journal
-Restart=always
-RestartSec=10
-Environment=RUST_BACKTRACE=1
-
-[Install]
-WantedBy=multi-user.target
-EOF'
-
-                    echo "刷新 systemd 配置并重启服务..."
-                    systemctl daemon-reload
-                    systemctl restart shai
-                    echo "核心数已更新，服务已重新启动。"
-                    break
-                else
-                    echo "错误：请输入一个大于0的数字。"
-                fi
-            done
-            ;;
-
-        11)
-            # 设置服务为开机自启动
-            echo "设置 Shaicoin 挖矿服务为开机自启动..."
-            systemctl enable shai
-            echo "Shaicoin 挖矿服务已设置为开机自启动。"
-            ;;
-
-        12)
-            # 移除服务的开机自启动
-            echo "移除 Shaicoin 挖矿服务的开机自启动..."
-            systemctl disable shai
-            echo "Shaicoin 挖矿服务的开机自启动已移除。"
             ;;
 
         *)
