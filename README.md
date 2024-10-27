@@ -4,10 +4,6 @@ Welcome to the Shaipot Miner installation guide. This script will help you set u
 
 Official mining pool: [https://pool.shaicoin.org](https://pool.shaicoin.org)
 
-## Instructions
-
-Run the following commands in the terminal based on your preferred language version and operating system.
-
 ### Linux Installation
 
 #### Chinese Version:
