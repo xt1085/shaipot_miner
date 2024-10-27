@@ -16,12 +16,13 @@ while true; do
     echo "10) 修改CPU占用"
     echo "11) 设置开机自启"
     echo "12) 移除开机自启"
+    echo "13) 启动挖矿"
     
-    echo -e "\n13) 退出脚本"
+    echo -e "\n14) 退出脚本"
 
-    read -rp "请输入选项编号 (1-13): " option
+    read -rp "请输入选项编号 (1-14): " option
 
-    if [[ "$option" == "13" ]]; then
+    if [[ "$option" == "14" ]]; then
         echo "退出脚本..."
         break
     fi
@@ -194,8 +195,36 @@ EOF
             fi
             ;;
 
+        7)
+            pool_address=$(grep -oP '(?<=--pool )\S+' /etc/systemd/system/shai.service)
+            if [[ -n "$pool_address" ]]; then
+                echo "当前矿池地址为: $pool_address"
+            else
+                echo "无法从服务文件中提取矿池地址。"
+            fi
+            ;;
+
+        9)
+            echo "可用矿池列表："
+            echo -e "\n矿池地址：wss://pool.shaicoin.org\n网站地址：https://pool.shaicoin.org\n"
+            echo -e "矿池地址：wss://shaipool.moncici.xyz/ws/\n网站地址：https://shaipool.moncici.xyz\n"
+            echo -e "矿池地址：ws://162.220.160.74:3333\n网站地址：https://shaipool.z4ch.xyz\n"
+            echo -e "矿池地址：wss://pool.shaicoin.fun\n网站地址：https://www.shaicoin.fun\n"
+            ;;
+
+        13)
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                echo "启动 Shaicoin 挖矿程序..."
+                "$HOME/start_shai_mining.sh" &
+            else
+                echo "启动 Shaicoin 挖矿服务..."
+                systemctl start shai
+                echo "Shaicoin 挖矿服务已启动。"
+            fi
+            ;;
+
         *)
-            echo "无效选项，请输入 1 到 13 之间的数字。"
+            echo "无效选项，请输入 1 到 14 之间的数字。"
             ;;
     esac
 
