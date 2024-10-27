@@ -21,7 +21,5 @@ Use the command below to install the English version of Shaipot Miner:
 apt install wget -y && rm -f shaipot_en.sh && wget https://raw.githubusercontent.com/xt1085/shaipot_miner/main/shaipot_en.sh && chmod +x shaipot_en.sh && ./shaipot_en.sh
 ```
 
-## Shaipot Miner for Windows 10:
-[https://github.com/xt1085/shaipot_miner/releases/tag/v1.0.0](https://github.com/xt1085/shaipot_miner/releases/tag/v1.0.0)
 
 
