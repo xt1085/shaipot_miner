@@ -23,6 +23,6 @@ apt install wget -y && rm -f shaipot_en.sh && wget https://raw.githubusercontent
 #### Chinese Version:
 Use the command below to install the Chinese version of Shaipot Miner on macOS:
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/xt1085/shaipot_miner/main/test_Mac.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/xt1085/shaipot_miner/main/test_macOS.sh)"
 ```
 
