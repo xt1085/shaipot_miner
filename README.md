@@ -26,3 +26,6 @@ Use the command below to install the Chinese version of Shaipot Miner on macOS:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/xt1085/shaipot_miner/main/test_macOS.sh)"
 ```
 
+### Win10 Installation
+
+[https://github.com/xt1085/shaipot_miner/releases/tag/v1.0.0](https://github.com/xt1085/shaipot_miner/releases/tag/v1.0.0)
